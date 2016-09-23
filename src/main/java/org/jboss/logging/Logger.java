@@ -35,6 +35,38 @@ public abstract class Logger implements Serializable, BasicLogger {
 
     private static final String FQCN = Logger.class.getName();
 
+    protected transient LoggerPlugin loggerDelegate = null;
+
+    public LoggerPlugin getLoggerPlugin()
+    {
+        return this.loggerDelegate;
+    }
+
+    protected static LoggerPlugin getDelegatePlugin(String name)
+    {
+        LoggerPlugin plugin = null;
+        try
+        {
+            plugin = (LoggerPlugin) new Log4jLoggerPlugin();
+        }
+        catch (Throwable e)
+        {
+            plugin = new NullLoggerPlugin();
+        }
+        try
+        {
+            plugin.init(name);
+        }
+        catch (Throwable e)
+        {
+            String extraInfo = e.getMessage();
+            System.err.println("Failed to initalize plugin: " + plugin + (extraInfo != null ? ", cause: " + extraInfo : ""));
+
+            plugin = new NullLoggerPlugin();
+        }
+        return plugin;
+    }
+
     /**
      * Levels used by this logging API.
      */
@@ -56,6 +88,7 @@ public abstract class Logger implements Serializable, BasicLogger {
      */
     protected Logger(final String name) {
         this.name = name;
+        this.loggerDelegate = getDelegatePlugin(name);
     }
 
     /**
